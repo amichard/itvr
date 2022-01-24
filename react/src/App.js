@@ -1,38 +1,52 @@
-import 'regenerator-runtime/runtime';
-
 import axios from 'axios';
 import React from 'react';
-import { Switch } from 'react-router';
-import { Route, BrowserRouter } from 'react-router-dom';
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+} from 'react-router-dom';
 
 import settings from './app/settings';
-import RusingStatsContainer from './rushing_stats/RusingStatsContainer';
+import RushingStatsContainer from './rushing_stats/RusingStatsContainer';
 
 const { API_BASE } = settings;
 
 axios.defaults.baseURL = API_BASE;
 
-const App = () => (
-  <div className="App">
-    <header className="App-header">
-      <div className="container">
-        <a href="/">
-          <div className="logo" />
-        </a>
-      </div>
-    </header>
+const App = () => {
+  const { sessionStorage } = window;
+  const redirect = sessionStorage.getItem('redirect');
+  if (redirect && redirect !== '') {
+    sessionStorage.removeItem('redirect');
+  }
 
-    <div className="App-body">
-      <BrowserRouter>
-        <Switch>
-          <Route
-            path="/"
-            component={RusingStatsContainer}
-          />
-        </Switch>
-      </BrowserRouter>
+  return (
+    <div className="App">
+      <header className="App-header">
+        <div className="container">
+          <a href="/">
+            <div className="logo" />
+          </a>
+        </div>
+      </header>
+
+      <div className="App-body">
+        <BrowserRouter>
+          {redirect && redirect !== '' && (
+            <Navigate to={redirect} />
+          )}
+
+          <Routes>
+            <Route
+              element={<RushingStatsContainer />}
+              path="/"
+            />
+          </Routes>
+        </BrowserRouter>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default App;

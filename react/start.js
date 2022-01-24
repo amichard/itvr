@@ -5,30 +5,26 @@ const path = require('path');
 const webpackConfig = require('./webpack.config');
 
 const serverOptions = {
-  contentBase: path.join(__dirname, 'public'),
-  publicPath: '/',
-  index: '/index.html',
-  disableHostCheck: true,
+  compress: true,
   historyApiFallback: {
-    verbose: true,
-    index: '/index.html',
     rewrites: [{
       from: /\/api/,
       to: '/api',
     }],
+    verbose: true,
   },
-  port: 3000,
-  compress: true,
-  public: 'localhost',
   hot: true,
-  watchOptions: {
-    ignored: ['node_modules'],
-    poll: 1500,
+  port: 3000,
+  static: {
+    directory: path.join(__dirname, 'public'),
+    publicPath: '/',
+    serveIndex: true,
   },
 };
 
-WebpackDevServer.addDevServerEntrypoints(webpackConfig, serverOptions);
 const compiler = Webpack(webpackConfig);
-const devServer = new WebpackDevServer(compiler, serverOptions);
+const devServer = new WebpackDevServer(serverOptions, compiler);
 
-devServer.listen(3000, '0.0.0.0', () => {});
+(async () => {
+  await devServer.start();
+})();

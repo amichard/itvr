@@ -1,9 +1,13 @@
 const Webpack = require('webpack');
 const path = require('path');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   devServer: {
+    compress: true,
     historyApiFallback: true,
+    hot: false,
+    webSocketServer: false,
   },
   devtool: 'source-map',
   entry: path.resolve(__dirname, 'src', 'index.js'),
@@ -32,10 +36,13 @@ module.exports = {
         loader: 'babel-loader',
         options: {
           presets: [
-            ['@babel/preset-env', {
-              targets: 'defaults',
-            }],
+            '@babel/preset-env',
             '@babel/preset-react',
+          ],
+          plugins: [
+            ['@babel/plugin-transform-runtime', {
+              regenerator: true,
+            }],
           ],
         },
       }],
@@ -46,7 +53,7 @@ module.exports = {
       test: /\.s[ac]ss$/i,
       use: ['style-loader', 'css-loader', 'sass-loader'],
     }, {
-      test: /\.(otf|eot|svg|ttf|woff|woff2)$/i,
+      test: /\.(otf|eot|ttf|woff|woff2)$/i,
       use: [{
         loader: 'url-loader',
       }],
@@ -59,10 +66,41 @@ module.exports = {
     publicPath: '/',
   },
   plugins: [
+    new CopyWebpackPlugin({
+      patterns: [{
+        from: './src/keycloak-source.json',
+        to: './keycloak.json',
+        force: true,
+        transform(content) {
+          const keycloak = JSON.parse(content.toString());
+
+          if ('KEYCLOAK_CLIENT_ID' in process.env) {
+            keycloak.resource = process.env.KEYCLOAK_CLIENT_ID;
+          }
+
+          if ('KEYCLOAK_REALM' in process.env) {
+            keycloak.realm = process.env.KEYCLOAK_REALM;
+          }
+
+          if ('KEYCLOAK_FRONTEND_URL' in process.env) {
+            keycloak['auth-server-url'] = process.env.KEYCLOAK_FRONTEND_URL;
+
+            if (process.env.KEYCLOAK_FRONTEND_URL === 'http://localhost:8080/auth/') {
+              keycloak['ssl-required'] = 'none';
+            }
+          }
+
+          return JSON.stringify(keycloak, null, 2);
+        },
+      }],
+    }),
     new Webpack.DefinePlugin({
       __API_BASE__: 'API_BASE' in process.env ? JSON.stringify(process.env.API_BASE) : JSON.stringify('/'),
       __ENABLE_KEYCLOAK__: 'ENABLE_KEYCLOAK' in process.env ? process.env.ENABLE_KEYCLOAK === 'true' : false,
-      __KEYCLOAK_URL__: 'KEYCLOAK_FRONTEND_URL' in process.env ? JSON.stringify(process.env.KEYCLOAK_FRONTEND_URL) : JSON.stringify('http://localhost:8080/auth'),
     }),
   ],
+  watchOptions: {
+    ignored: /node_modules/,
+    poll: 1000,
+  },
 };
